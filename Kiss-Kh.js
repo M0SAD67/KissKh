@@ -32,7 +32,6 @@ async function extractDetails(url) {
 
         const transformedResults = [{
             description: data.description || 'No description available',
-            // Movies use runtime (in minutes)
             aliases: ``,
             airdate: `Released: ${data.releaseDate ? data.releaseDate : 'Unknown'}`
         }];
@@ -78,17 +77,30 @@ async function extractEpisodes(url) {
 async function extractStreamUrl(url) {
     try {
         const streams = await networkFetch(url, 30, {}, ".m3u8");
-        const subtitles2 = await networkFetch(url + "?lang=ar", 30, {}, ".srt");
-        
-        console.log("Vidnest.fun streams: " + JSON.stringify(streams));
-        console.log("Vidnest.fun streams: " + streams.requests.find(url => url.includes('.m3u8')));
+        const subtitles2 = await networkFetch(url, 30, {}, ".srt");
 
-        console.log("Vidnest.fun Arabic subtitles: " + JSON.stringify(subtitles2));
-        console.log("Vidnest.fun subtitles: " + subtitles2.requests.find(url => url.includes('.srt')));
+        console.log("All Streams:", JSON.stringify(streams.requests, null, 2));
+        console.log("All Subtitles:", JSON.stringify(subtitles2.requests, null, 2));
 
         if (streams.requests && streams.requests.length > 0) {
-            const streamUrl = streams.requests.find(url => url.includes('.m3u8')) || "";
-            const subtitles = subtitles2.requests.find(url => url.includes('.srt')) || "";
+            const streamUrl = streams.requests.find(u => u.includes('.m3u8')) || "";
+
+            // جهز Array بكل الترجمات
+            const subtitles = subtitles2.requests
+                .filter(u => u.includes('.srt'))
+                .map(u => {
+                    let lang = "unknown";
+
+                    if (u.includes("-ar") || u.includes(".ar.") || u.toLowerCase().includes("arabic")) {
+                        lang = "ar";
+                    } else if (u.includes("-en") || u.includes(".en.") || u.toLowerCase().includes("english")) {
+                        lang = "en";
+                    } else if (u.includes("-fr") || u.includes(".fr.")) {
+                        lang = "fr";
+                    }
+
+                    return { lang, url: u };
+                });
 
             const results = {
                 streams: [{
@@ -100,7 +112,7 @@ async function extractStreamUrl(url) {
                     },
                 }],
                 subtitles
-            }
+            };
 
             return JSON.stringify(results);
         } else {
