@@ -2,11 +2,11 @@
     "sourceName": "KissKH",
     "iconUrl": "https://raw.githubusercontent.com/xibrox/sora-movie-module/refs/heads/main/kisskh/icon.png",
     "author": {
-        "name": "ibro",
+        "name": "M O S A",
         "icon": "https://raw.githubusercontent.com/xibrox/sora-movie-module/refs/heads/main/profile.jpg",
         "url": "https://github.com/xibrox"
     },
-    "version": "1.0.5",
+    "version": "1.5.0",
     "language": "Korean/English",
     "streamType": "HLS",
     "quality": "1080p",
