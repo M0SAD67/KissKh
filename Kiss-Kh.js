@@ -78,12 +78,12 @@ async function extractEpisodes(url) {
 async function extractStreamUrl(url) {
     try {
         const streams = await networkFetch(url, 30, {}, ".m3u8");
-        const subtitles2 = await networkFetch(url, 30, {}, ".srt");
-
+        const subtitles2 = await networkFetch(url + "?lang=ar", 30, {}, ".srt");
+        
         console.log("Vidnest.fun streams: " + JSON.stringify(streams));
         console.log("Vidnest.fun streams: " + streams.requests.find(url => url.includes('.m3u8')));
 
-        console.log("Vidnest.fun subtitles: " + JSON.stringify(subtitles2));
+        console.log("Vidnest.fun Arabic subtitles: " + JSON.stringify(subtitles2));
         console.log("Vidnest.fun subtitles: " + subtitles2.requests.find(url => url.includes('.srt')));
 
         if (streams.requests && streams.requests.length > 0) {
