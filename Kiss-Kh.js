@@ -80,27 +80,38 @@ async function extractStreamUrl(url) {
         const subtitles2 = await networkFetch(url, 30, {}, ".srt");
 
         console.log("All Streams:", JSON.stringify(streams.requests, null, 2));
-        console.log("All Subtitles:", JSON.stringify(subtitles2.requests, null, 2));
+        console.log("Raw Subtitles Response:", JSON.stringify(subtitles2, null, 2));
 
         if (streams.requests && streams.requests.length > 0) {
             const streamUrl = streams.requests.find(u => u.includes('.m3u8')) || "";
 
-            // جهز Array بكل الترجمات
-            const subtitles = subtitles2.requests
-                .filter(u => u.includes('.srt'))
-                .map(u => {
-                    let lang = "unknown";
+            // جرب تجيب روابط الترجمة
+            let subtitles = [];
+            if (subtitles2.requests && subtitles2.requests.length > 0) {
+                subtitles = subtitles2.requests
+                    .filter(u => u.includes('.srt') || u.includes('.vtt'))
+                    .map(u => {
+                        let lang = "unknown";
+                        if (u.includes("-ar") || u.includes(".ar.") || u.toLowerCase().includes("arabic")) {
+                            lang = "ar";
+                        } else if (u.includes("-en") || u.includes(".en.") || u.toLowerCase().includes("english")) {
+                            lang = "en";
+                        }
+                        return { lang, url: u };
+                    });
+            }
 
-                    if (u.includes("-ar") || u.includes(".ar.") || u.toLowerCase().includes("arabic")) {
-                        lang = "ar";
-                    } else if (u.includes("-en") || u.includes(".en.") || u.toLowerCase().includes("english")) {
-                        lang = "en";
-                    } else if (u.includes("-fr") || u.includes(".fr.")) {
-                        lang = "fr";
-                    }
-
-                    return { lang, url: u };
-                });
+            // لو مفيش روابط ترجمة مفهومة → جرب نفك Base64
+            if (subtitles.length === 0 && subtitles2.data) {
+                try {
+                    const decoded = Buffer.from(subtitles2.data, "base64").toString("utf-8");
+                    console.log("Decoded Subtitles (maybe Arabic):", decoded.slice(0, 500));
+                    subtitles.push({ lang: "decoded", content: decoded });
+                } catch (e) {
+                    console.log("Subtitles not Base64, raw text used.");
+                    subtitles.push({ lang: "raw", content: subtitles2.data });
+                }
+            }
 
             const results = {
                 streams: [{
