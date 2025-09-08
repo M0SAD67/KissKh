@@ -1,18 +1,18 @@
 {
     "sourceName": "KissKH",
-    "iconUrl": "https://raw.githubusercontent.com/xibrox/sora-movie-module/refs/heads/main/kisskh/icon.png",
+    "iconUrl": "https://raw.githubusercontent.com/M0SAD67/KissKh/refs/heads/main/icon.png",
     "author": {
         "name": "M O S A",
-        "icon": "https://raw.githubusercontent.com/xibrox/sora-movie-module/refs/heads/main/profile.jpg",
-        "url": "https://github.com/xibrox"
+        "icon": "https://raw.githubusercontent.com/M0SAD67/KissKh/refs/heads/main/profile.jpg",
+        "url": "https://github.com/M0SAD67"
     },
     "version": "1.5.0",
-    "language": "Korean/English",
+    "language": "Korean/Arabic",
     "streamType": "HLS",
     "quality": "1080p",
     "baseUrl": "https://kisskh.co/",
     "searchBaseUrl": "https://kisskh.co/api/DramaList/Search?q=%s&type=0",
-    "scriptUrl": "https://raw.githubusercontent.com/xibrox/sora-movie-module/refs/heads/main/kisskh/kisskh.js",
+    "scriptUrl": "https://raw.githubusercontent.com/M0SAD67/KissKh/refs/heads/main/Kiss-Kh.js",
     "type": "anime/shows/movies",
     "downloadSupport": true,
     "asyncJS": true,
