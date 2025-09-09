@@ -77,93 +77,39 @@ async function extractEpisodes(url) {
 async function extractStreamUrl(url) {
     try {
         const streams = await networkFetch(url, 30, {}, ".m3u8");
-        const subtitles2 = await networkFetch(url, 30, {}, ".srt");
 
         console.log("All Streams:", JSON.stringify(streams.requests, null, 2));
-        console.log("Raw Subtitles Response:", JSON.stringify(subtitles2, null, 2));
 
         if (streams.requests && streams.requests.length > 0) {
             const streamUrl = streams.requests.find(u => u.includes('.m3u8')) || "";
 
-            // 🎬 البحث عن روابط الترجمة المحلية
+            // -----------------------------
+            // ✅ جلب روابط الترجمة من API
+            // -----------------------------
             let subtitles = [];
-            if (subtitles2.requests && subtitles2.requests.length > 0) {
-                subtitles = subtitles2.requests
-                    .filter(u => u.includes('.srt') || u.includes('.vtt'))
-                    .map(u => {
-                        let lang = "unknown";
-                        if (u.includes("-ar") || u.includes(".ar.") || u.toLowerCase().includes("arabic")) {
-                            lang = "ar";
-                        } else if (u.includes("-en") || u.includes(".en.") || u.toLowerCase().includes("english")) {
-                            lang = "en";
-                        }
-                        return { lang, url: u };
-                    });
-            }
-
-            // 📂 فك Base64 لو مفيش روابط ترجمة مباشرة
-            if (subtitles.length === 0 && subtitles2.data) {
-                try {
-                    const decoded = Buffer.from(subtitles2.data, "base64").toString("utf-8");
-                    console.log("Decoded Subtitles (maybe Arabic):", decoded.slice(0, 500));
-                    subtitles.push({ lang: "decoded", content: decoded });
-                } catch (e) {
-                    console.log("Subtitles not Base64, raw text used.");
-                    subtitles.push({ lang: "raw", content: subtitles2.data });
-                }
-            }
-
-            // 🌐 جلب الترجمة من API خارجي زي الكود الأول
             try {
-                if (url.includes("movie/")) {
-                    // أفلام
-                    const movieMatch = url.match(/movie\/([^\/]+)/);
-                    if (movieMatch) {
-                        const movieId = movieMatch[1];
-                        const subtitleTrackResponse = await soraFetch(`https://sub.wyzie.ru/search?id=${movieId}`);
-                        const subtitleTrackData = await subtitleTrackResponse.json();
+                // ناخد الـ episodeId من الرابط
+                const match = url.match(/ep=(\d+)/);
+                if (match) {
+                    const episodeId = match[1];
+                    const subRes = await fetch(`https://kisskh.co/api/Drama/GetEpisode?id=${episodeId}`);
+                    const subData = await subRes.json();
 
-                        let subtitleTrack = subtitleTrackData.find(track =>
-                            track.display.includes('Arabic') && (track.encoding === 'ASCII' || track.encoding === 'UTF-8')
-                        );
-
-                        if (!subtitleTrack) {
-                            subtitleTrack = subtitleTrackData.find(track => track.display.includes('Arabic'));
-                        }
-
-                        if (subtitleTrack) {
-                            subtitles.push({ lang: "ar", url: subtitleTrack.url });
-                        }
-                    }
-                } else if (url.includes("tv/")) {
-                    // مسلسلات
-                    const tvMatch = url.match(/tv\/([^\/]+)\/([^\/]+)\/([^\/]+)/);
-                    if (tvMatch) {
-                        const showId = tvMatch[1];
-                        const seasonNumber = tvMatch[2];
-                        const episodeNumber = tvMatch[3];
-
-                        const subtitleTrackResponse = await soraFetch(`https://sub.wyzie.ru/search?id=${showId}&season=${seasonNumber}&episode=${episodeNumber}`);
-                        const subtitleTrackData = await subtitleTrackResponse.json();
-
-                        let subtitleTrack = subtitleTrackData.find(track =>
-                            track.display.includes('Arabic') && (track.encoding === 'ASCII' || track.encoding === 'UTF-8')
-                        );
-
-                        if (!subtitleTrack) {
-                            subtitleTrack = subtitleTrackData.find(track => track.display.includes('Arabic'));
-                        }
-
-                        if (subtitleTrack) {
-                            subtitles.push({ lang: "ar", url: subtitleTrack.url });
-                        }
+                    if (subData && subData.SubtitleList) {
+                        subtitles = subData.SubtitleList.map(sub => {
+                            let lang = sub.Language || "unknown";
+                            let subUrl = sub.Source || "";
+                            return { lang, url: subUrl };
+                        });
                     }
                 }
             } catch (err) {
-                console.log("External subtitles fetch failed:", err);
+                console.log("Subtitle fetch error:", err);
             }
 
-            // النتيجة النهائية
+            // -----------------------------
+            // ✅ النتيجة النهائية
+            // -----------------------------
             const results = {
                 streams: [{
                     title: "Stream",
@@ -185,6 +131,7 @@ async function extractStreamUrl(url) {
         return null;
     }
 }
+
 
 async function soraFetch(url, options = { headers: {}, method: 'GET', body: null, encoding: 'utf-8' }) {
     try {
