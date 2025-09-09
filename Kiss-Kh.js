@@ -85,7 +85,7 @@ async function extractStreamUrl(url) {
         if (streams.requests && streams.requests.length > 0) {
             const streamUrl = streams.requests.find(u => u.includes('.m3u8')) || "";
 
-            // جرب تجيب روابط الترجمة
+            // 🎬 البحث عن روابط الترجمة المحلية
             let subtitles = [];
             if (subtitles2.requests && subtitles2.requests.length > 0) {
                 subtitles = subtitles2.requests
@@ -101,7 +101,7 @@ async function extractStreamUrl(url) {
                     });
             }
 
-            // لو مفيش روابط ترجمة مفهومة → جرب نفك Base64
+            // 📂 فك Base64 لو مفيش روابط ترجمة مباشرة
             if (subtitles.length === 0 && subtitles2.data) {
                 try {
                     const decoded = Buffer.from(subtitles2.data, "base64").toString("utf-8");
@@ -113,6 +113,57 @@ async function extractStreamUrl(url) {
                 }
             }
 
+            // 🌐 جلب الترجمة من API خارجي زي الكود الأول
+            try {
+                if (url.includes("movie/")) {
+                    // أفلام
+                    const movieMatch = url.match(/movie\/([^\/]+)/);
+                    if (movieMatch) {
+                        const movieId = movieMatch[1];
+                        const subtitleTrackResponse = await soraFetch(`https://sub.wyzie.ru/search?id=${movieId}`);
+                        const subtitleTrackData = await subtitleTrackResponse.json();
+
+                        let subtitleTrack = subtitleTrackData.find(track =>
+                            track.display.includes('Arabic') && (track.encoding === 'ASCII' || track.encoding === 'UTF-8')
+                        );
+
+                        if (!subtitleTrack) {
+                            subtitleTrack = subtitleTrackData.find(track => track.display.includes('Arabic'));
+                        }
+
+                        if (subtitleTrack) {
+                            subtitles.push({ lang: "ar", url: subtitleTrack.url });
+                        }
+                    }
+                } else if (url.includes("tv/")) {
+                    // مسلسلات
+                    const tvMatch = url.match(/tv\/([^\/]+)\/([^\/]+)\/([^\/]+)/);
+                    if (tvMatch) {
+                        const showId = tvMatch[1];
+                        const seasonNumber = tvMatch[2];
+                        const episodeNumber = tvMatch[3];
+
+                        const subtitleTrackResponse = await soraFetch(`https://sub.wyzie.ru/search?id=${showId}&season=${seasonNumber}&episode=${episodeNumber}`);
+                        const subtitleTrackData = await subtitleTrackResponse.json();
+
+                        let subtitleTrack = subtitleTrackData.find(track =>
+                            track.display.includes('Arabic') && (track.encoding === 'ASCII' || track.encoding === 'UTF-8')
+                        );
+
+                        if (!subtitleTrack) {
+                            subtitleTrack = subtitleTrackData.find(track => track.display.includes('Arabic'));
+                        }
+
+                        if (subtitleTrack) {
+                            subtitles.push({ lang: "ar", url: subtitleTrack.url });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log("External subtitles fetch failed:", err);
+            }
+
+            // النتيجة النهائية
             const results = {
                 streams: [{
                     title: "Stream",
