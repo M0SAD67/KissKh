@@ -32,6 +32,7 @@ async function extractDetails(url) {
 
         const transformedResults = [{
             description: data.description || 'No description available',
+            // Movies use runtime (in minutes)
             aliases: ``,
             airdate: `Released: ${data.releaseDate ? data.releaseDate : 'Unknown'}`
         }];
@@ -77,39 +78,18 @@ async function extractEpisodes(url) {
 async function extractStreamUrl(url) {
     try {
         const streams = await networkFetch(url, 30, {}, ".m3u8");
+        const subtitles2 = await networkFetch(url, 30, {}, ".srt");
 
-        console.log("All Streams:", JSON.stringify(streams.requests, null, 2));
+        console.log("Vidnest.fun streams: " + JSON.stringify(streams));
+        console.log("Vidnest.fun streams: " + streams.requests.find(url => url.includes('.m3u8')));
+
+        console.log("Vidnest.fun subtitles: " + JSON.stringify(subtitles2));
+        console.log("Vidnest.fun subtitles: " + subtitles2.requests.find(url => url.includes('.srt')));
 
         if (streams.requests && streams.requests.length > 0) {
-            const streamUrl = streams.requests.find(u => u.includes('.m3u8')) || "";
+            const streamUrl = streams.requests.find(url => url.includes('.m3u8')) || "";
+            const subtitles = subtitles2.requests.find(url => url.includes('.srt')) || "";
 
-            // -----------------------------
-            // ✅ جلب روابط الترجمة من API
-            // -----------------------------
-            let subtitles = [];
-            try {
-                // ناخد الـ episodeId من الرابط
-                const match = url.match(/ep=(\d+)/);
-                if (match) {
-                    const episodeId = match[1];
-                    const subRes = await fetch(`https://kisskh.co/api/Drama/GetEpisode?id=${episodeId}`);
-                    const subData = await subRes.json();
-
-                    if (subData && subData.SubtitleList) {
-                        subtitles = subData.SubtitleList.map(sub => {
-                            let lang = sub.Language || "unknown";
-                            let subUrl = sub.Source || "";
-                            return { lang, url: subUrl };
-                        });
-                    }
-                }
-            } catch (err) {
-                console.log("Subtitle fetch error:", err);
-            }
-
-            // -----------------------------
-            // ✅ النتيجة النهائية
-            // -----------------------------
             const results = {
                 streams: [{
                     title: "Stream",
@@ -120,7 +100,7 @@ async function extractStreamUrl(url) {
                     },
                 }],
                 subtitles
-            };
+            }
 
             return JSON.stringify(results);
         } else {
@@ -131,7 +111,6 @@ async function extractStreamUrl(url) {
         return null;
     }
 }
-
 
 async function soraFetch(url, options = { headers: {}, method: 'GET', body: null, encoding: 'utf-8' }) {
     try {
